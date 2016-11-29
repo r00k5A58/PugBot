@@ -14,6 +14,12 @@ config = json.loads(open('config.json').read())  # Load Configs
 API_KEY = config["blizzard_api_key"]
 default_region = config["default_region"]
 
+region_locale = {
+    'us': ['us', 'en_US', 'en'],
+#    'kr': ['kr', 'ko_KR', 'ko'],
+#    'tw': ['tw', 'zh_TW', 'zh'],
+    'eu': ['eu', 'en_GB', 'en']
+}
 
 def get_sockets(player_dictionary):
     """
@@ -86,12 +92,6 @@ def get_progress(player_dictionary, raid):
 
 
 def get_char(name, server, target_region):
-    region_locale = {
-        'us': ['us', 'en_US', 'en'],
-#        'kr': ['kr', 'ko_KR', 'ko'],
-#        'tw': ['tw', 'zh_TW', 'zh'],
-        'eu': ['eu', 'en_GB', 'en']
-    }
 
     r = requests.get(
         "https://%s.api.battle.net/wow/character/%s/%s?fields=items+progression&locale=%s&apikey=%s" % (
