@@ -12,6 +12,7 @@ ENCHANTABLE_SLOTS = ["neck", "back", "finger1", "finger2"]
 
 config = json.loads(open('config.json').read())  # Load Configs
 API_KEY = config["blizzard_api_key"]
+default_region = config["default_region"]
 
 
 def get_sockets(player_dictionary):
@@ -84,17 +85,25 @@ def get_progress(player_dictionary, raid):
             "total_bosses": len(r["bosses"])}
 
 
-def get_char(name, server):
+def get_char(name, server, target_region):
+    region_locale = {
+        'us': ['us', 'en_US', 'en'],
+#        'kr': ['kr', 'ko_KR', 'ko'],
+#        'tw': ['tw', 'zh_TW', 'zh'],
+        'eu': ['eu', 'en_GB', 'en']
+    }
+
     r = requests.get(
-        "https://us.api.battle.net/wow/character/%s/%s?fields=items+progression&locale=en_US&apikey=%s" % (
-            server, name, API_KEY))
+        "https://%s.api.battle.net/wow/character/%s/%s?fields=items+progression&locale=%s&apikey=%s" % (
+            region_locale[target_region][0], server, name, region_locale[target_region][1], API_KEY))
     if r.status_code != 200:
         raise Exception("Could Not Find Character (No 200 from API)")
 
     player_dict = json.loads(r.text)
 
     r = requests.get(
-        "https://us.api.battle.net/wow/data/character/classes?locale=en_US&apikey=%s" % (API_KEY))
+        "https://%s.api.battle.net/wow/data/character/classes?locale=%s&apikey=%s" % (
+            region_locale[target_region][0], region_locale[target_region][1], API_KEY))
     if r.status_code != 200:
         raise Exception("Could Not Find Character Classes (No 200 From API)")
     class_dict = json.loads(r.text)
@@ -106,8 +115,8 @@ def get_char(name, server):
     tov_progress = get_progress(player_dict, "Trial of Valor")
     en_progress = get_progress(player_dict, "The Emerald Nightmare")
 
-    armory_url = 'http://us.battle.net/wow/en/character/{}/{}/advanced'.format(
-        server, name)
+    armory_url = 'http://{}.battle.net/wow/{}/character/{}/{}/advanced'.format(
+        region_locale[target_region][0], region_locale[target_region][2], server, name)
 
     return_string = ''
     return_string += "**%s** - **%s** - **%s %s**\n" % (
@@ -144,11 +153,15 @@ def get_char(name, server):
 
 
 async def pug(client, message):
+    target_region = default_region
+    acceptable_regions = ["eu", "us"] #kr and tw not working as of yet
     try:
         i = str(message.content).split(' ')
         name = i[1]
         server = i[2]
-        character_info = get_char(name, server)
+        if len(i) == 4 and i[3].lower() in acceptable_regions:
+            target_region = i[3].lower()
+        character_info = get_char(name, server, target_region)
         await client.send_message(message.channel, character_info)
     except Exception as e:
         await client.send_message(message.channel, "Error: %s" % e)
