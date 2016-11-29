@@ -115,8 +115,7 @@ def get_mythic_progression(player_dictionary):
     }
 
 
-def get_char(name, server, target_region):
-
+def get_char(name, server):
     r = requests.get(
         "https://%s.api.battle.net/wow/character/%s/%s?fields=items+progression+achievements&locale=%s&apikey=%s" % (
             region_locale[target_region][0], server, name, region_locale[target_region][1], API_KEY))
@@ -184,12 +183,11 @@ def get_char(name, server, target_region):
 
 async def pug(client, message):
     target_region = default_region
-    acceptable_regions = ["eu", "us"] #kr and tw not working as of yet
     try:
         i = str(message.content).split(' ')
         name = i[1]
         server = i[2]
-        if len(i) == 4 and i[3].lower() in acceptable_regions:
+        if len(i) == 4 and i[3].lower() in region_locale.keys():
             target_region = i[3].lower()
         character_info = get_char(name, server, target_region)
         await client.send_message(message.channel, character_info)
