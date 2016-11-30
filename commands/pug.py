@@ -24,7 +24,6 @@ region_locale = {
 def get_sockets(player_dictionary):
     """
     Return dict with total sockets and count of equipped gems and slots that are missing
-
     :param player_dictionary: Retrieved player dict from API
     :return: dict()
     """
@@ -40,6 +39,10 @@ def get_sockets(player_dictionary):
 
         for bonus in player_dictionary["items"][item]["bonusLists"]:
             if bonus == 1808:  # 1808 is Legion prismatic socket bonus
+                sockets += 1
+
+        if item in ["neck", "finger1", "finger2"]:
+            if player_dictionary["items"][item]["context"] == "trade-skill":
                 sockets += 1
 
         for ttip in player_dictionary["items"][item]["tooltipParams"]:
@@ -90,30 +93,6 @@ def get_raid_progression(player_dictionary, raid):
             "mythic": mythic,
             "total_bosses": len(r["bosses"])}
 
-def get_mythic_progression(player_dictionary):
-    achievements = player_dictionary["achievements"]
-    plus_two = 0
-    plus_five = 0
-    plus_ten = 0
-
-    if 33096 in achievements["criteria"]:
-        index = achievements["criteria"].index(33096)
-        plus_two = achievements["criteriaQuantity"][index]
-
-    if 33097 in achievements["criteria"]:
-        index = achievements["criteria"].index(33097)
-        plus_five = achievements["criteriaQuantity"][index]
-
-    if 33098 in achievements["criteria"]:
-        index = achievements["criteria"].index(33098)
-        plus_ten = achievements["criteriaQuantity"][index]
-
-    return {
-        "plus_two": plus_two,
-        "plus_five": plus_five,
-        "plus_ten": plus_ten
-    }
-
 
 def get_mythic_progression(player_dictionary):
     achievements = player_dictionary["achievements"]
@@ -140,15 +119,35 @@ def get_mythic_progression(player_dictionary):
     }
 
 
-def get_char(name, server):
-    r = requests.get(
-<<<<<<< HEAD
-        "https://%s.api.battle.net/wow/character/%s/%s?fields=items+progression+achievements&locale=%s&apikey=%s" % (
+def get_mythic_progression(player_dictionary):
+    achievements = player_dictionary["achievements"]
+    plus_two = 0
+    plus_five = 0
+    plus_ten = 0
+
+    if 33096 in achievements["criteria"]:
+        index = achievements["criteria"].index(33096)
+        plus_two = achievements["criteriaQuantity"][index]
+
+    if 33097 in achievements["criteria"]:
+        index = achievements["criteria"].index(33097)
+        plus_five = achievements["criteriaQuantity"][index]
+
+    if 33098 in achievements["criteria"]:
+        index = achievements["criteria"].index(33098)
+        plus_ten = achievements["criteriaQuantity"][index]
+
+    return {
+        "plus_two": plus_two,
+        "plus_five": plus_five,
+        "plus_ten": plus_ten
+    }
+
+
+def get_char(name, server, target_region):
+    r = requests.get("https://%s.api.battle.net/wow/character/%s/%s?fields=items+progression+achievements&locale=%s&apikey=%s" % (
             region_locale[target_region][0], server, name, region_locale[target_region][1], API_KEY))
-=======
-        "https://us.api.battle.net/wow/character/%s/%s?fields=items+progression+achievements&locale=en_US&apikey=%s" % (
-            server, name, API_KEY))
->>>>>>> 869337f486d04a9e069ac94a5353ce7d90474011
+
     if r.status_code != 200:
         raise Exception("Could Not Find Character (No 200 from API)")
 
@@ -222,6 +221,7 @@ async def pug(client, message):
         character_info = get_char(name, server, target_region)
         await client.send_message(message.channel, character_info)
     except Exception as e:
+        print(e)
         await client.send_message(message.channel, "Error With Name or Server\n"
-                                                   "Use: !pug <name> <server>\n"
+                                                   "Use: !pug <name> <server> <region>\n"
                                                    "Hyphenate Two Word Servers (Ex: Twisting-Nether)")
